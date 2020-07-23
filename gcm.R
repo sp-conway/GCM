@@ -1,6 +1,8 @@
 # Function for implementation of Nosofsky's (1986) Generalized Context Model
 # Sean Conway, July 2020
 require(dplyr)
+
+# As of right now, need to name the rows in the category matrix as category names
 gcm<-function(params, stim, categories){
   c<-params[1]
   # If using two dimensions, just need one w (the other is 1-w)
@@ -8,14 +10,10 @@ gcm<-function(params, stim, categories){
   
   r<-2 # May need to change to  1 (city-block)
   
-  # Change column names just to be safe
-  colnames(stim)<-c('x','y')
-  colnames(categories)<-c('x','y')
-  
   # Calculate distance from each stimulus to every category in MDS space
   # Do so for x and y separately for simplicity
-  x_dist<-lapply(1:nrow(stim),FUN=function(i) categories[,'x'] - - stim[i,'x'])
-  y_dist<-lapply(1:nrow(stim),FUN=function(i) categories[,'y'] - - stim[i,'y'])
+  x_dist<-lapply(1:nrow(stim),FUN=function(i) categories[,1] - stim[i,1])
+  y_dist<-lapply(1:nrow(stim),FUN=function(i) categories[,2] - stim[i,2])
   x_dist<-as.matrix(unlist(x_dist))
   
   # Preserving row names ensures we know for which category the row refers to
@@ -47,7 +45,7 @@ gcm<-function(params, stim, categories){
   All_Sums<-dist_mat %>%
     group_by(Stim) %>%
     summarise(Sum_Sim=sum(Sim))
-  dist_mat<-left_join(dist_mat,All_Sums)
+  dist_mat<-inner_join(dist_mat,All_Sums)
   
   # Calculate probability per GCM rule
   dist_mat$Prob<-dist_mat$Sim/dist_mat$Sum_Sim
