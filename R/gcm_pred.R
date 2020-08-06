@@ -48,7 +48,7 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   }
   
   n_stim<-nrow(stim)
-  n_cats<-unique(exemplar_cats)
+  n_cats<-unique(exemplar_names)
   
   # Repeat each stimulus X & Y value by the number of exemplars it needs to be compared to
   stim_x<-unlist(lapply(1:nrow(stim),FUN=function(i) rep(stim[i,1],each=nrow(categories))))
@@ -64,7 +64,7 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   
   # Category exemplars in a matrix repeated by n stimuli to be compared to
   categories<-matrix(data=rep(categories,3),ncol=ncol(categories))
-  categories<-cbind(rep(exemplar_cats,3),categories)
+  categories<-cbind(rep(exemplar_names,3),categories)
   colnames(categories)<-c("Cat","Cat_X","Cat_Y")
   
   # all in DF
