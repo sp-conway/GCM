@@ -1,6 +1,5 @@
 # Function for obtaining predictions from Nosofsky's (1986) Generalized Context Model
-# Sean Conway, July 2020
-
+#
 # ARGUMENTS
 #   params - model parameters. 
 #     params[1]<- c - the sensitivity parameter
@@ -19,6 +18,7 @@
 
 # FUNCTION RETURNS
 # cat_probs - data frame with probability of classifying each unique stimulus into each unique category
+# cat_probs_w_sim <- same as cat_probs but includes similarity values as well
 library(dplyr)
 
 gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
@@ -69,20 +69,11 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   
   # all in DF
   comb<-as.data.frame(cbind(stim,categories))
-  
-  # calc distance per Nosofsky (1986)
-  # only for 2 dimensional stimuli
-  dist<-function(X1,Y1,X2,Y2,c,w){
-    x<-w[1]*(abs(X1-X2)^r)
-    y<-w[2]*(abs(Y1-Y2)^r)
-    xy<-x+y
-    xy<-c*(xy^(1/r))
-    return(xy)
-  }
-
   comb$Stim<-as.factor(comb$Stim)
   comb$Cat<-as.factor(comb$Cat)
   
+  # Using dist function
+  source('~/Box/GCM/R/dist.R')
   comb$Dist<-dist(comb$Stim_X,comb$Stim_Y,comb$Cat_X,comb$Cat_Y,c=c,w=w)
   
   # Convert distances to similarities per Nosofsky (1986)
@@ -116,5 +107,9 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   # Probability calculation
   cat_probs$prob<-cat_probs$sim_bias/cat_probs$T_Sim
   
-  return(cat_probs)
+  cat_probs_w_sim<-cat_probs
+    
+  cat_probs<-cat_probs[,-c(3:6)]
+  
+  return(list(cat_probs,cat_probs_w_sim))
 }
