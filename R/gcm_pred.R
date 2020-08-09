@@ -35,6 +35,13 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   # b - category response bias
   b<-c(params[3],1-params[3])
   
+  # gamma - from Ashby & Maddox (1993) - optional parameter
+  if (length(params)==4){
+    gamma<-params[4]
+  } else{
+    gamma<-1
+  }
+  
   #Euclidean distance (For now) - May need to change to  1 (city block distance)
   r<-2
   
@@ -92,6 +99,9 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   
   # Put bias in
   cat_probs$Bias<-bias
+  
+  # Include gamma
+  cat_probs$sim<-cat_probs$sim^gamma
   
   # Multiply similarity to a category by that category's response bias
   cat_probs$sim_bias<-cat_probs$sim*cat_probs$Bias

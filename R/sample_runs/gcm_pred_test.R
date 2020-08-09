@@ -19,7 +19,7 @@ exemplar_coords <- matrix(c(2,3,
 # Exemplar categories
 exemplar_cats <- c(1, 1, 1, 2, 2, 2)
 # Parameters
-params <- c(1, .5, .5)  # c, w, b
+params <- c(1, .5, .5) #,100)  # c, w, b, [gamma] [optional]
 
 pred_dat<-gcm_pred(params = params, stim=all_test_coords, categories = exemplar_coords, 
          stim_names = stim_names, exemplar_names = exemplar_cats)[[1]]
