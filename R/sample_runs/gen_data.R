@@ -24,4 +24,4 @@ exemplar_cats <- c(1, 1, 1, 2, 2, 2)
 params <- c(1, .5, .5)  # c, w, b
 
 gen_data<-gcm_pred(params = params, stim=all_test_coords, categories = exemplar_coords, 
-                   stim_names = stim_names, exemplar_names = exemplar_cats)[[2]]
+                   stim_names = stim_names, exemplar_names = exemplar_cats)
