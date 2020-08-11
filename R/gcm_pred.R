@@ -4,9 +4,12 @@
 #   params - model parameters. 
 #     params[1]<- c - the sensitivity parameter
 #     params[2] <- w - dimension weighting parameter
-#       -IN ORDER OF DIMENSIONS
+#       -LIST IN ORDER OF DIMENSIONS
+#       -sum of all w = 1
 #     params[3] <- b - category response bias
 #       -IN ORDER OF CATEGORIES 
+#     params[4] (OPTIONAL) <- gamma - deterministic responding
+#       -bound from 0:inf
 #   stim - matrix of MDS coordinates for classification stimuli
 #     *Note: Present code assumes two dimensions. Needs to be modified if >2
 #   categories - matrix of x y MDS coordinates for category stimuli 
@@ -14,8 +17,7 @@
 #   stim_names - stimulus names - in order of matrix rows
 #   exemplar names - in order of matrix rows
 #     e.g. In two category structure, 3 exemps per cat, = c(1,1,1,2,2,2) 
-
-
+#
 # FUNCTION RETURNS
 # cat_probs - data frame with probability of classifying each unique stimulus into each unique category
 # cat_probs_w_sim <- same as cat_probs but includes similarity values as well
@@ -41,9 +43,6 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   } else{
     gamma<-1
   }
-  
-  #Euclidean distance (For now) - May need to change to  1 (city block distance)
-  r<-2
   
   # Name category rows by the exemplar names
   if(is.null(rownames(categories))){
@@ -117,9 +116,5 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   # Probability calculation
   cat_probs$prob<-cat_probs$sim_bias/cat_probs$T_Sim
   
-  cat_probs_w_sim<-cat_probs
-    
-  cat_probs<-cat_probs[,-c(3:6)]
-  
-  return(list(cat_probs,cat_probs_w_sim))
+  return(cat_probs)
 }
