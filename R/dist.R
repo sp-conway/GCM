@@ -37,8 +37,14 @@ dist<-function(stim1, stim2,c=1,w,n_dims,r){
   mat_2<-mat_2[,mat_1_dim_idx]
   
   # perform distance calculations
-  dist_mat<-sapply(1:n_dims, function(i) mat_1[,i]-mat_2[,i])
-  dist_mat<-sapply(1:n_dims, function(i) (dist_mat[,i]*w[i])^r)
+  dist_mat<-matrix(data=NA,ncol = n_dims,nrow=nrow(mat_1))
+  
+  # Had to use a for loop here - hopefully looping over columns isn't too slow
+  for(i in 1:n_dims){
+    dist_mat[,i]<-mat_1[,i]-mat_2[,i]
+    dist_mat[,i]<-(dist_mat[,i]*w[i])^r
+  }
+  
   dist_mat<-cbind(dist_mat, 'dist'=rowSums(dist_mat))
   dist_mat[,'dist']<-c*(dist_mat[,'dist']^(1/r))
   
