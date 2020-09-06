@@ -12,7 +12,7 @@
 #       -bound from 0:inf
 #   stim - matrix of MDS coordinates for classification stimuli
 #     *Note: Present code assumes two dimensions. Needs to be modified if >2
-#   categories - matrix of x y MDS coordinates for category stimuli 
+#   categories - list of matrices of x y MDS coordinates for category stimuli 
 #     *Note: Present code assumes two dimensions. Needs to be modified if >2
 #   stim_names - stimulus names - in order of matrix rows
 #   exemplar names - in order of matrix rows
@@ -21,7 +21,16 @@
 # FUNCTION RETURNS
 # cat_probs - data frame with probability of classifying each unique stimulus into each unique category
 # cat_probs_w_sim <- same as cat_probs but includes similarity values as well
+#
+# Assume dimensions ordered the same for stimuli & categories
+# Sean Conway
+# August 2020
+# Change History:
+#
+#
+### Currently ONLY WORKS FOR TWO CATEGORIES W/ TWO DIMENSIONS
 library(dplyr)
+source('~/Box/GCM/R/dist.R')
 
 gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   
@@ -34,7 +43,8 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   # Need to change if > 2 dimensions
   w<-c(params[2],1-params[2])
   
-  # b - category response bias
+  # b - category response bias - b is bias for first category.
+  n_cats<-unique(exemplar_names)
   b<-c(params[3],1-params[3])
   
   # gamma - from Ashby & Maddox (1993) - optional parameter
@@ -50,43 +60,11 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   }
   
   if(is.null(rownames(stim))){
-    rownames(stim)<-paste(seq(1:nrow(all_test_coords)))
+    rownames(stim)<-paste(seq(1:nrow(stim)))
   }
   
-  n_stim<-nrow(stim)
-  n_cats<-unique(exemplar_names)
-  
-  # Repeat each stimulus X & Y value by the number of exemplars it needs to be compared to
-  stim_x<-unlist(lapply(1:nrow(stim),FUN=function(i) rep(stim[i,1],each=nrow(categories))))
-  stim_y<-unlist(lapply(1:nrow(stim),FUN=function(i) rep(stim[i,2],each=nrow(categories))))
-  
-  # Get stimulus names in a vector that matches the structure of stim_x, stim_y
-  # Keeps track of which stimulus is compared to which exemplar
-  stim_names_var<-unlist(lapply(1:nrow(stim),FUN=function(i) rep(stim_names[i],each=nrow(categories))))
-  
-  # Get stimulus in a matrix, where each stimulus name, x val, y val, repeated by n exemplars
-  stim<-cbind(stim_names_var,stim_x,stim_y)
-  colnames(stim)<-c("Stim","Stim_X","Stim_Y")
-  
-  # Category exemplars in a matrix repeated by n stimuli to be compared to
-  categories<-matrix(data=rep(categories,3),ncol=ncol(categories))
-  categories<-cbind(rep(exemplar_names,3),categories)
-  colnames(categories)<-c("Cat","Cat_X","Cat_Y")
-  
-  # all in DF
-  comb<-as.data.frame(cbind(stim,categories))
-  comb$Stim<-as.factor(comb$Stim)
-  comb$Cat<-as.factor(comb$Cat)
-  
-  # Using dist function
-  source('~/Box/GCM/R/dist.R')
-  comb$Dist<-dist(comb$Stim_X,comb$Stim_Y,comb$Cat_X,comb$Cat_Y,c=c,w=w)
-  
-  # Convert distances to similarities per Nosofsky (1986)
-  comb$sim<-exp(-comb$Dist)
-  
-  # Get b values ready to be added to df
-  bias<-rep(b,each=n_stim)
+  dist_mat<-dist(stim1=stim, stim2=categories[1], w=w,c=c,n_dims=2)
+  dist_mat<-cbind(dist_mat,'sim'=exp(-dist_mat[,'dist']))
   
   # For each category x stim combo, sum similarity values
   cat_probs <- comb %>%
@@ -95,6 +73,9 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   
   # Order by category name
   cat_probs<-cat_probs %>% arrange(Cat)
+  
+  # Get b values ready to be added to df
+  bias<-rep(b,each=n_stim)
   
   # Put bias in
   cat_probs$Bias<-bias
