@@ -1,5 +1,4 @@
 # Function for calculating distance between two matrices of stimuli per Nosofsky (1986)
-# only for 2 dimensional stimuli
 # ASSUMES DIMENSIONS ARE ORDERED IN THE SAME ORDER FOR EACH STIMULUS MATRIX
 # uses compmat function to compare all stimuli of one matrix to all of the other
 # then calculates distance
