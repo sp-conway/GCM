@@ -16,7 +16,8 @@
 #     *Note: Present code assumes two dimensions. Needs to be modified if >2
 #   stim_names - stimulus names - in order of matrix rows
 #   exemplar names - in order of matrix rows
-#     e.g. In two category structure, 3 exemps per cat, = c(1,1,1,2,2,2) 
+#     e.g. In two category structure, 3 exemps per cat, = c(1,1,1,2,2,2)
+#   gamma - logical value - is there a gamma parameter?
 #
 # FUNCTION RETURNS
 # cat_probs - data frame with probability of classifying each unique stimulus into each unique category
@@ -32,7 +33,7 @@
 library(dplyr)
 source('~/Box/GCM/R/dist.R')
 
-gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
+gcm_pred<-function(params, stim, categories,stim_names,exemplar_names,gamma){
   
   # c - sensitivity parameter
   c<-params[1]
@@ -48,10 +49,11 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
   b<-c(params[3],1-params[3])
   
   # gamma - from Ashby & Maddox (1993) - optional parameter
-  if (length(params)==4){
-    gamma<-params[4]
-  } else{
-    gamma<-1
+  if (gamma==1){
+    g<-tail(params,n=1)
+  }
+  else{
+    g<-1
   }
   
   # Name category rows by the exemplar names
@@ -63,9 +65,13 @@ gcm_pred<-function(params, stim, categories,stim_names,exemplar_names){
     rownames(stim)<-paste(seq(1:nrow(stim)))
   }
   
-  dist_mat<-dist(stim1=stim, stim2=categories[1], w=w,c=c,n_dims=2)
-  dist_mat<-cbind(dist_mat,'sim'=exp(-dist_mat[,'dist']))
+  sim<-list()
   
+  for(i in categories){
+    dist_mat[[i]]<-dist(stim1=stim, stim2=categories[[i]], w=w,c=c,n_dims=2)
+    sim[[i]]<-sapply(1:nrow(dist_mat[[i]]),function(j) similarity(dist_mat[j,'dist'],f=1))
+  }
+
   # For each category x stim combo, sum similarity values
   cat_probs <- comb %>%
     group_by(Stim,Cat) %>%

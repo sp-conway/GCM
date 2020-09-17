@@ -41,8 +41,7 @@ dist<-function(stim1, stim2,c=1,w,n_dims,r){
   
   # Had to use a for loop here - hopefully looping over columns isn't too slow
   for(i in 1:n_dims){
-    dist_mat[,i]<-mat_1[,i]-mat_2[,i]
-    dist_mat[,i]<-(dist_mat[,i]*w[i])^r
+    dist_mat[,i]<-(w[i]*(mat_1[,i]-mat_2[,i]))^r
   }
   
   dist_mat<-cbind(dist_mat, 'dist'=rowSums(dist_mat))
