@@ -90,13 +90,12 @@ N <- 30
 params <- c(2, .5, .5)
 
 # rmsd
-gcm_cost(params, all_test_coords, freq_cat_A_data, N, all_exemplar_coords, cost_type='rmsd')
 # You should get 0.07263109.
 gcm_rms(params=params, stimuli=all_test_coords, freq_cat_A_data=freq_cat_A_data,N= N, exemplars=all_exemplar_coords)  
 
-c<-seq(0,5,by=.1)
-w<-seq(0,1,by=.01)
-b<-seq(0,1,by=.01)
+c<-seq(0,5,by=.20)
+w<-seq(0,1,by=.05)
+b<-seq(0,1,by=.05)
 n_c<-length(c)
 n_w<-length(w)
 n_b<-length(b)
