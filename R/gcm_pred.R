@@ -1,107 +1,82 @@
-# Function for obtaining predictions from Nosofsky's (1986) Generalized Context Model
-#
-# ARGUMENTS
-#   params - model parameters. 
-#     params[1]<- c - the sensitivity parameter
-#     params[2] <- w - dimension weighting parameter
-#       -LIST IN ORDER OF DIMENSIONS
-#       -sum of all w = 1
-#     params[3] <- b - category response bias
-#       -IN ORDER OF CATEGORIES 
-#     params[4] (OPTIONAL) <- gamma - deterministic responding
-#       -bound from 0:inf
-#   stim - matrix of MDS coordinates for classification stimuli
-#     *Note: Present code assumes two dimensions. Needs to be modified if >2
-#   categories - list of matrices of x y MDS coordinates for category stimuli 
-#     *Note: Present code assumes two dimensions. Needs to be modified if >2
-#   stim_names - stimulus names - in order of matrix rows
-#   exemplar names - in order of matrix rows
-#     e.g. In two category structure, 3 exemps per cat, = c(1,1,1,2,2,2)
-#   gamma - logical value - is there a gamma parameter?
-#
-# FUNCTION RETURNS
-# cat_probs - data frame with probability of classifying each unique stimulus into each unique category
-# cat_probs_w_sim <- same as cat_probs but includes similarity values as well
-#
-# Assume dimensions ordered the same for stimuli & categories
+# gcm predict function for multiple (>2) categories
+# Exemplars will be in a list for each category
+# Stimuli in matrix
+# Still assuming 2 dimensions
 # Sean Conway
-# August 2020
-# Change History:
-#
-#
-### Currently ONLY WORKS FOR TWO CATEGORIES W/ TWO DIMENSIONS
-library(dplyr)
-source('~/Box/GCM/R/dist.R')
+# Sept. 2020
 
-gcm_pred<-function(params, stim, categories,stim_names,exemplar_names,gamma){
-  
-  # c - sensitivity parameter
-  c<-params[1]
-  
-  # w - dimension weighting parameter(s). Number of dimensions = Number of w values
-  # w[1] = w_x = dimension weighting for x
-  # w[2] = w_y = dimension weighting for y
-  # Need to change if > 2 dimensions
-  w<-c(params[2],1-params[2])
-  
-  # b - category response bias - b is bias for first category.
-  n_cats<-unique(exemplar_names)
-  b<-c(params[3],1-params[3])
-  
-  # gamma - from Ashby & Maddox (1993) - optional parameter
-  if (gamma==1){
-    g<-tail(params,n=1)
-  }
-  else{
-    g<-1
-  }
-  
-  # Name category rows by the exemplar names
-  if(is.null(rownames(categories))){
-    rownames(categories)<-exemplar_names
-  }
-  
-  if(is.null(rownames(stim))){
-    rownames(stim)<-paste(seq(1:nrow(stim)))
-  }
-  
-  sim<-list()
-  
-  for(i in categories){
-    dist_mat[[i]]<-dist(stim1=stim, stim2=categories[[i]], w=w,c=c,n_dims=2)
-    sim[[i]]<-sapply(1:nrow(dist_mat[[i]]),function(j) similarity(dist_mat[j,'dist'],f=1))
-  }
+source('~/Box/GCM/R/similarity.R')
+source('~/Box/GCM/R/distance.R')
 
-  # For each category x stim combo, sum similarity values
-  cat_probs <- comb %>%
-    group_by(Stim,Cat) %>%
-    summarise(sim=sum(sim))
+gcm_pred <- function(params,stimuli, exemplars, determ = F){
+  # number of categories 
+  n_cats <- length(exemplars)
   
-  # Order by category name
-  cat_probs<-cat_probs %>% arrange(Cat)
+  # sensitivity
+  c <- params[1]
   
-  # Get b values ready to be added to df
-  bias<-rep(b,each=n_stim)
+  # attention weighting for dimension 1.
+  w <- params[2]
   
-  # Put bias in
-  cat_probs$Bias<-bias
+  # number of bias parameters to estimate (1 - number of categories)
+  n_bias <- n_cats - 1
+  # response bias for cat 1, cat 2, etc...all must sum to 1
+  b <- c(params[3:(3+n_bias-1)])
+  b <- c(b, 1-sum(b))
   
-  # Include gamma
-  cat_probs$sim<-cat_probs$sim^gamma
+  # optional gamma parameter - determines amount of deterministic v. probabilistic responding
+  # should be last value in the params vector if used
+  if (determ){
+   g <- tail(params, n=1)
+  }
+  else {
+   g <- 1
+  }
   
-  # Multiply similarity to a category by that category's response bias
-  cat_probs$sim_bias<-cat_probs$sim*cat_probs$Bias
+  # number of test stimuli
+  n_stim<-nrow(stimuli)
   
-  # Sum all similarities for each stimulus
-  All_Sums <- cat_probs %>%
-    group_by(Stim) %>%
-    summarise(T_Sim=sum(sim_bias))
+  # create a matrix of exemplar coordinates (to be filled in by for loop)
+  exemplar_coords <- matrix(0,ncol=n_cats)
   
-  # Join summed vals
-  cat_probs<-inner_join(cat_probs,All_Sums,by="Stim")
+  # Similarity matrix to be filled in
+  # last column is row similarity (i.e., summed similarity of stimulus i to all exemplars j.)
+  sim_mat <- matrix(0,ncol=n_cats+1, nrow=n_stim)
   
-  # Probability calculation
-  cat_probs$prob<-cat_probs$sim_bias/cat_probs$T_Sim
+  # iterate through each stimulus & each category.
+  for(i in 1:n_stim){
+    for(j in 1:n_cats){
+      
+      # all exemplar coordinates for exemplars in category j
+      exemplar_coords <- exemplars[[j]]
+      
+      # number of exemplars in category j
+      n_exemps<-nrow(exemplars[[j]])
+      
+      # stimulus to compare to exemplars in cat. j
+      stim <- stimuli[i,]
+      
+      # for each exemplar in j, calculate distance between exemplar and a given stimulus i
+      dist <- sapply(1:n_exemps, function(x) distance(exemplar_coords[x,],stim_coords_2=stim, w=w))
+      
+      # convert distance to similarity, given c (sensitivity)
+      sim <- similarity(dist,c)
+      
+      # add up all similarities of a given stimulus to all exemplars of a particular category.
+      sim_mat[i,j] <- sum(sim)
+      # incorporate response bias and gamma parameter
+      sim_mat[i,j] <- (sim_mat[i,j]*b[j])^g
+    }
+  }
   
-  return(cat_probs)
+  # last column is summed similarity of stimulus to all categories (i.e., denominator of gcm)
+  sim_mat[1:n_stim,n_cats+1] <- rowSums(sim_mat)
+  
+  # create probability matrix
+  prob_mat <- matrix(0,nrow=n_stim, ncol=n_cats)
+  
+  # probability of categorizing each stimulus into each category. have to divide by summed similarity
+  # of a particular stimulus to all exemplars of both categories
+  prob_mat <- sim_mat[1:n_stim,1:n_cats]/sim_mat[1:n_stim, n_cats+1]
+  return(prob_mat)
 }
