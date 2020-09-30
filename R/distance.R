@@ -10,5 +10,4 @@ distance <- function(stim_coords_1, stim_coords_2, w, r=2) {
   xy <- x+y
   d <- (xy^(1/r))
   return(d)
-  
 }
